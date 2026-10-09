@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+# Datos y secretos: nunca al repositorio
+*.npy
+data/
+kaggle.json
+.kaggle/
+access_token
+.env
+# Salidas locales
+resultado*.png
