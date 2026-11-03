@@ -37,7 +37,7 @@ from melanoma.predictor import MelanomaAnalyzer, dibujar_contorno, preparar  # n
 BASE_DIR = Path(__file__).resolve().parent  # relativo al código, no al directorio desde donde se corre
 MODELS_DIR = os.getenv("MODELS_DIR", str(BASE_DIR / "models"))
 MODEL_VERSION = os.getenv("MODEL_VERSION", "efficientnetb0-ham10000-v1")
-API_KEY = os.getenv("MELANOMA_API_KEY")  # obligatoria: se exige el header X-API-Key
+API_KEY = os.getenv("MELANOMA_API_key")   # obligatoria: se exige el header X-API-Key
 ALLOW_NO_KEY = os.getenv("ALLOW_NO_KEY") == "1"  # solo para pruebas locales
 MAX_MB = int(os.getenv("MAX_IMAGE_MB", "10"))
 MAX_BYTES = MAX_MB * 1024 * 1024

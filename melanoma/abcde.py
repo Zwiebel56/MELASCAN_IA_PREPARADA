@@ -5,6 +5,7 @@ Todas las funciones esperan una imagen RGB uint8 de 224x224 (o similar).
 import cv2
 import numpy as np
 
+
 # Umbrales por defecto (percentiles sobre ~1.200 imágenes de HAM10000).
 # Si existe models/abcde_thr.joblib se usan esos en su lugar.
 DEFAULT_THRESHOLDS = {"TH_A": 0.21, "TH_COMP": 1.72, "TH_SOL": 0.90, "TH_CV": 8.3}

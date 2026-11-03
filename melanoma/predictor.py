@@ -5,6 +5,7 @@ import cv2
 import joblib
 import numpy as np
 from PIL import Image
+import tensorflow as tf
 
 from .abcde import evaluar_abcde
 
@@ -40,8 +41,6 @@ def _to_logit(p):
 
 class MelanomaAnalyzer:
     def __init__(self, models_dir="models"):
-        import tensorflow as tf  # import diferido: abcde.py se puede usar sin TensorFlow
-
         self.model = tf.keras.models.load_model(os.path.join(models_dir, "melanoma_model.keras"))
         cal = joblib.load(os.path.join(models_dir, "melanoma_calib.joblib"))
         self.calib, self.thr = cal["calib"], float(cal["thr"])
