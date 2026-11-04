@@ -34,10 +34,21 @@ from PIL import Image  # noqa: E402
 
 from melanoma.predictor import MelanomaAnalyzer, dibujar_contorno, preparar  # noqa: E402
 
+# TensorFlow abre ~2 threads por core del SERVIDOR sin mirar el límite de CPU del container, y eso supera
+# el máximo de threads permitido. tic pasa el CPU de la app en OMP_NUM_THREADS, pero TensorFlow no lo lee:
+# se lo damos acá, antes de crear o cargar el modelo (el modelo se carga en lifespan, más abajo).
+import cv2  # noqa: E402
+import tensorflow as tf  # noqa: E402
+
+N_THREADS = int(os.environ.get("OMP_NUM_THREADS", "2"))  # en local no existe: usa 2
+tf.config.threading.set_intra_op_parallelism_threads(N_THREADS)
+tf.config.threading.set_inter_op_parallelism_threads(N_THREADS)
+cv2.setNumThreads(N_THREADS)  # OpenCV también arma un pool de threads por core
+
 BASE_DIR = Path(__file__).resolve().parent  # relativo al código, no al directorio desde donde se corre
 MODELS_DIR = os.getenv("MODELS_DIR", str(BASE_DIR / "models"))
 MODEL_VERSION = os.getenv("MODEL_VERSION", "efficientnetb0-ham10000-v1")
-API_KEY = os.getenv("MELANOMA_API_key")   # obligatoria: se exige el header X-API-Key
+API_KEY = os.getenv("MELANOMA_API_KEY")  # obligatoria: se exige el header X-API-Key
 ALLOW_NO_KEY = os.getenv("ALLOW_NO_KEY") == "1"  # solo para pruebas locales
 MAX_MB = int(os.getenv("MAX_IMAGE_MB", "10"))
 MAX_BYTES = MAX_MB * 1024 * 1024
