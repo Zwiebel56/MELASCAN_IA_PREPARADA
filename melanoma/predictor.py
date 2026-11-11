@@ -5,7 +5,6 @@ import cv2
 import joblib
 import numpy as np
 from PIL import Image
-import tensorflow as tf
 
 from .abcde import evaluar_abcde
 
@@ -41,6 +40,8 @@ def _to_logit(p):
 
 class MelanomaAnalyzer:
     def __init__(self, models_dir="models"):
+        import tensorflow as tf  # import diferido: abcde.py se puede usar sin TensorFlow
+
         self.model = tf.keras.models.load_model(os.path.join(models_dir, "melanoma_model.keras"))
         cal = joblib.load(os.path.join(models_dir, "melanoma_calib.joblib"))
         self.calib, self.thr = cal["calib"], float(cal["thr"])
@@ -48,7 +49,10 @@ class MelanomaAnalyzer:
         self.th = joblib.load(p) if os.path.exists(p) else None
 
     def riesgo(self, img224):
-        p = float(self.model.predict(img224[None].astype("float32"), verbose=0).ravel()[0])
+        # Llamada directa al modelo: model.predict() arma por dentro un tf.data.Dataset con su propio
+        # grupo de threads (uno por core del servidor) y en tic eso tumba la app (pthread_create failed).
+        x = img224[None].astype("float32")
+        p = float(np.asarray(self.model(x, training=False)).ravel()[0])
         return float(self.calib.predict_proba(_to_logit(np.array([p])))[:, 1][0])
 
     def analizar(self, imagen):
