@@ -24,6 +24,8 @@ from pathlib import Path
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
 # El filesystem del container es de solo lectura salvo /tmp y data/: Keras escribe su config ahí.
 os.environ.setdefault("KERAS_HOME", os.path.join(tempfile.gettempdir(), ".keras"))
+# tic no tiene GPU: que TensorFlow no intente inicializar CUDA (el modelo corre bien en CPU).
+os.environ.setdefault("CUDA_VISIBLE_DEVICES", "-1")
 
 from contextlib import asynccontextmanager  # noqa: E402
 
@@ -44,6 +46,10 @@ N_THREADS = int(os.environ.get("OMP_NUM_THREADS", "2"))  # en local no existe: u
 tf.config.threading.set_intra_op_parallelism_threads(N_THREADS)
 tf.config.threading.set_inter_op_parallelism_threads(N_THREADS)
 cv2.setNumThreads(N_THREADS)  # OpenCV también arma un pool de threads por core
+try:
+    tf.config.set_visible_devices([], "GPU")  # segunda barrera: ninguna GPU visible
+except (RuntimeError, ValueError):
+    pass
 
 BASE_DIR = Path(__file__).resolve().parent  # relativo al código, no al directorio desde donde se corre
 MODELS_DIR = os.getenv("MODELS_DIR", str(BASE_DIR / "models"))
@@ -104,6 +110,21 @@ async def proteger_analizar(request: Request, call_next):
         if largo.isdigit() and int(largo) > MAX_BYTES + 64 * 1024:
             return _error(413, "imagen_muy_grande", f"La imagen supera los {MAX_MB} MB.")
     return await call_next(request)
+
+
+# CORS: va DESPUÉS del middleware de la clave, así queda por fuera y hasta los errores 401/413 llevan
+# los headers (si no, el navegador los muestra como "error de red"). Orígenes configurables con
+# CORS_ORIGINS (separados por coma, o "*"); por defecto, el front en local.
+from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
+
+_origenes = [o.strip() for o in os.getenv(
+    "CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",") if o.strip()]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_origenes,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
+)
 
 
 @app.exception_handler(ApiError)
